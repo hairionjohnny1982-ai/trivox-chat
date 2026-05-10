@@ -86,8 +86,12 @@ a { color: var(--accent); text-decoration: none; }
 .messages::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
 .message { max-width: 800px; margin: 0 auto 14px; padding: 14px 18px; border-radius: 12px; line-height: 1.6; font-size: 14px; }
 .message.user { background: var(--accent2); color: white; margin-left: auto; margin-right: 0; max-width: 600px; border-radius: 12px 12px 2px 12px; }
-.message.assistant { background: var(--bg3); border: 1px solid var(--border); }
+.message.assistant { background: var(--bg3); border: 1px solid var(--border); position: relative; }
 .message.assistant p { margin-bottom: 8px; }
+.msg-copy { position: absolute; top: 8px; right: 8px; background: var(--bg4); border: 1px solid var(--border); color: var(--text2); border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+.message.assistant:hover .msg-copy { opacity: 1; }
+.msg-copy:hover { background: var(--accent2); color: white; border-color: var(--accent2); }
+.msg-copy.copied { color: var(--green); border-color: var(--green); opacity: 1; }
 .message.assistant p:last-child { margin-bottom: 0; }
 .message.assistant pre { background: var(--bg); border-radius: 8px; padding: 12px; margin: 8px 0; overflow-x: auto; border: 1px solid var(--border); }
 .message.assistant code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; }
@@ -452,6 +456,7 @@ function renderMessages(messages) {
     if (m.role === 'assistant') {
       div.innerHTML = marked.parse(m.content || '');
       div.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+      addCopyBtn(div, m.content || '');
     } else {
       div.textContent = m.content;
     }
@@ -551,6 +556,7 @@ async function sendMessage() {
       }
     }
 
+    addCopyBtn(assistDiv, fullText);
     setTimeout(() => loadConversations(), 500);
   } catch(e) {
     assistDiv.innerHTML = `<p style="color:var(--red)">Erreur: ${escHtml(e.message)}</p>`;
@@ -734,6 +740,21 @@ function openRepoModal() { closeSidebar(); document.getElementById('repoModal').
 function openSearchModal() { closeSidebar(); document.getElementById('searchModal').classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function addCopyBtn(msgDiv, rawText) {
+  const btn = document.createElement('button');
+  btn.className = 'msg-copy';
+  btn.textContent = 'Copier';
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(rawText).then(() => {
+      btn.textContent = 'Copie!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 1500);
+    });
+  };
+  msgDiv.appendChild(btn);
+}
 
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('active'); });
