@@ -327,82 +327,108 @@ async def chat(req: Request):
 
 @app.post("/api/repos/index")
 async def index_repo_endpoint(req: Request):
-    """Clone and index a GitHub repo for code search."""
+    """Clone and index a GitHub repo with SSE progress logs."""
     body = await req.json()
     repo_url = body.get("url", "").strip()
     if not repo_url:
         raise HTTPException(400, "Missing repo URL")
-
     if not encoder:
-        raise HTTPException(503, "TriVox encoder not loaded — cannot index")
+        raise HTTPException(503, "TriVox encoder not loaded")
 
     repo_name = repo_url.rstrip("/").split("/")[-1].replace(".git", "")
     repo_dir = os.path.join(REPOS_DIR, repo_name)
 
+    import queue
+    log_q: queue.Queue = queue.Queue()
+
     def do_index():
         import subprocess
+        from chunker import chunk_code, chunk_text
+        from qdrant_client.models import PointStruct
+
         # Clone or pull
         if os.path.exists(os.path.join(repo_dir, ".git")):
+            log_q.put(f"git pull {repo_name}...")
             subprocess.run(["git", "-C", repo_dir, "pull"], capture_output=True, timeout=120)
             action = "updated"
         else:
+            log_q.put(f"git clone {repo_url} (depth=1)...")
             r = subprocess.run(["git", "clone", "--depth", "1", repo_url, repo_dir],
                               capture_output=True, timeout=300)
             if r.returncode != 0:
-                return {"repo": repo_name, "error": r.stderr.decode()[:200], "chunks_indexed": 0}
+                log_q.put(f"ERREUR clone: {r.stderr.decode()[:200]}")
+                log_q.put("DONE:0")
+                return
             action = "cloned"
+        log_q.put(f"Repo {action}. Scan des fichiers...")
 
-        # Index files
-        indexed = 0
-        from chunker import chunk_code, chunk_text
-        from qdrant_client.models import PointStruct
-        points = []
-
+        # Count files first
+        all_files = []
         for root, dirs, files in os.walk(repo_dir):
             dirs[:] = [d for d in dirs if d not in {".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build", ".tox", "eggs"}]
             for fname in files:
-                fpath = os.path.join(root, fname)
-                rel = os.path.relpath(fpath, repo_dir)
-                if any(fname.endswith(ext) for ext in [".png", ".jpg", ".gif", ".ico", ".woff", ".ttf", ".pdf", ".zip", ".tar", ".gz", ".bin", ".pt", ".onnx", ".mo", ".po", ".pyc"]):
-                    continue
-                try:
-                    text = open(fpath, "r", errors="ignore").read()
-                    if len(text) > 50000:
-                        text = text[:50000]
-                except:
-                    continue
+                if not any(fname.endswith(ext) for ext in [".png", ".jpg", ".gif", ".ico", ".woff", ".ttf", ".pdf", ".zip", ".tar", ".gz", ".bin", ".pt", ".onnx", ".mo", ".po", ".pyc"]):
+                    all_files.append(os.path.join(root, fname))
+        log_q.put(f"{len(all_files)} fichiers a indexer")
 
-                is_code = any(fname.endswith(ext) for ext in [".py", ".js", ".ts", ".tsx", ".jsx", ".java", ".go", ".rs", ".c", ".cpp", ".h", ".rb", ".php", ".cs", ".swift", ".kt", ".sh", ".sql", ".html", ".css"])
-                if is_code:
-                    chunks = chunk_code(text, fname=rel)
-                else:
-                    chunks = chunk_text(text, prefix=f"[{rel}] ")
+        indexed = 0
+        points = []
+        for i, fpath in enumerate(all_files):
+            rel = os.path.relpath(fpath, repo_dir)
+            try:
+                text = open(fpath, "r", errors="ignore").read()
+                if len(text) > 50000:
+                    text = text[:50000]
+            except:
+                continue
 
-                for chunk in chunks:
-                    emb = encoder.encode(chunk)
-                    points.append(PointStruct(
-                        id=str(uuid.uuid4()),
-                        vector=emb,
-                        payload={"text": chunk[:2000], "file": rel, "repo": repo_name, "type": "code" if is_code else "doc"}
-                    ))
-                    indexed += 1
+            is_code = any(fpath.endswith(ext) for ext in [".py", ".js", ".ts", ".tsx", ".jsx", ".java", ".go", ".rs", ".c", ".cpp", ".h", ".rb", ".php", ".cs", ".swift", ".kt", ".sh", ".sql", ".html", ".css"])
+            chunks = chunk_code(text, fname=rel) if is_code else chunk_text(text, prefix=f"[{rel}] ")
+
+            for chunk in chunks:
+                emb = encoder.encode(chunk)
+                points.append(PointStruct(
+                    id=str(uuid.uuid4()),
+                    vector=emb,
+                    payload={"text": chunk[:2000], "file": rel, "repo": repo_name, "type": "code" if is_code else "doc"}
+                ))
+                indexed += 1
+
+            if (i + 1) % 20 == 0 or (i + 1) == len(all_files):
+                log_q.put(f"[{i+1}/{len(all_files)}] {rel} ({indexed} chunks)")
 
         # Store in Qdrant
         if points and memory_store:
+            log_q.put(f"Stockage de {len(points)} chunks dans Qdrant...")
             collection = f"repo_{repo_name.lower().replace('-', '_')}"
             memory_store._ensure_collection(collection)
             batch_size = 100
             for i in range(0, len(points), batch_size):
                 memory_store.client.upsert(collection, points[i:i+batch_size])
+            log_q.put(f"Collection repo_{repo_name} creee ({len(points)} vecteurs)")
 
-        return {"repo": repo_name, "action": action, "chunks_indexed": indexed}
+        log_q.put(f"DONE:{indexed}")
 
-    try:
-        result = await asyncio.to_thread(do_index)
-        return result
-    except Exception as e:
-        log.error(f"Index error: {e}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
+    async def stream_logs():
+        loop = asyncio.get_event_loop()
+        task = loop.run_in_executor(None, do_index)
+        while True:
+            try:
+                msg = log_q.get_nowait()
+                yield f"data: {json.dumps({'log': msg})}\n\n"
+                if msg.startswith("DONE:"):
+                    count = int(msg.split(":")[1])
+                    yield f"data: {json.dumps({'done': True, 'repo': repo_name, 'chunks_indexed': count})}\n\n"
+                    return
+            except queue.Empty:
+                await asyncio.sleep(0.3)
+                if task.done():
+                    exc = task.exception()
+                    if exc:
+                        yield f"data: {json.dumps({'log': f'ERREUR: {exc}', 'done': True, 'error': str(exc)})}\n\n"
+                    return
+
+    return StreamingResponse(stream_logs(), media_type="text/event-stream")
 
 
 @app.get("/api/repos")

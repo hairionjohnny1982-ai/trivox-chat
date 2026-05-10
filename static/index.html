@@ -177,10 +177,11 @@ a { color: var(--accent); text-decoration: none; }
   <div class="modal">
     <h3>Indexer un repo GitHub</h3>
     <input type="text" id="repoUrl" placeholder="https://github.com/user/repo">
+    <div id="repoLogs" style="font-size:11px;color:var(--text2);margin-bottom:12px;max-height:200px;overflow-y:auto;font-family:monospace;white-space:pre-wrap;background:var(--bg);border-radius:6px;padding:8px;display:none;"></div>
     <div id="repoStatus" style="font-size:12px;color:var(--text2);margin-bottom:12px;"></div>
     <div class="modal-btns">
       <button class="cancel" onclick="closeModal('repoModal')">Annuler</button>
-      <button class="primary" onclick="indexRepo()">Indexer</button>
+      <button class="primary" id="indexBtn" onclick="indexRepo()">Indexer</button>
     </div>
   </div>
 </div>
@@ -412,20 +413,55 @@ async function indexRepo() {
   const url = document.getElementById('repoUrl').value.trim();
   if (!url) return;
   const status = document.getElementById('repoStatus');
-  status.textContent = 'Indexation en cours...';
+  const logs = document.getElementById('repoLogs');
+  const btn = document.getElementById('indexBtn');
+  status.textContent = '';
+  logs.style.display = 'block';
+  logs.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Indexation...';
+
   try {
     const resp = await fetch('/api/repos/index', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
     });
-    const data = await resp.json();
-    status.textContent = `${data.action} "${data.repo}" — ${data.chunks_indexed} chunks indexes`;
-    status.style.color = 'var(--green)';
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.log) {
+            logs.textContent += data.log + '\n';
+            logs.scrollTop = logs.scrollHeight;
+          }
+          if (data.done) {
+            if (data.error) {
+              status.textContent = 'Erreur: ' + data.error;
+              status.style.color = 'var(--red)';
+            } else {
+              status.textContent = `${data.repo} — ${data.chunks_indexed} chunks indexes`;
+              status.style.color = 'var(--green)';
+            }
+          }
+        } catch(e) {}
+      }
+    }
   } catch(e) {
     status.textContent = 'Erreur: ' + e.message;
     status.style.color = 'var(--red)';
   }
+  btn.disabled = false;
+  btn.textContent = 'Indexer';
 }
 
 async function doSearch() {
