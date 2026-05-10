@@ -339,15 +339,17 @@ async def index_repo_endpoint(req: Request):
     repo_name = repo_url.rstrip("/").split("/")[-1].replace(".git", "")
     repo_dir = os.path.join(REPOS_DIR, repo_name)
 
-    async def do_index():
+    def do_index():
         import subprocess
         # Clone or pull
         if os.path.exists(os.path.join(repo_dir, ".git")):
             subprocess.run(["git", "-C", repo_dir, "pull"], capture_output=True, timeout=120)
             action = "updated"
         else:
-            subprocess.run(["git", "clone", "--depth", "1", repo_url, repo_dir],
-                          capture_output=True, timeout=300)
+            r = subprocess.run(["git", "clone", "--depth", "1", repo_url, repo_dir],
+                              capture_output=True, timeout=300)
+            if r.returncode != 0:
+                return {"repo": repo_name, "error": r.stderr.decode()[:200], "chunks_indexed": 0}
             action = "cloned"
 
         # Index files
@@ -357,22 +359,20 @@ async def index_repo_endpoint(req: Request):
         points = []
 
         for root, dirs, files in os.walk(repo_dir):
-            dirs[:] = [d for d in dirs if d not in {".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build"}]
+            dirs[:] = [d for d in dirs if d not in {".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build", ".tox", "eggs"}]
             for fname in files:
                 fpath = os.path.join(root, fname)
                 rel = os.path.relpath(fpath, repo_dir)
-                # Skip binary / large files
-                if any(fname.endswith(ext) for ext in [".png", ".jpg", ".gif", ".ico", ".woff", ".ttf", ".pdf", ".zip", ".tar", ".gz", ".bin", ".pt", ".onnx"]):
+                if any(fname.endswith(ext) for ext in [".png", ".jpg", ".gif", ".ico", ".woff", ".ttf", ".pdf", ".zip", ".tar", ".gz", ".bin", ".pt", ".onnx", ".mo", ".po", ".pyc"]):
                     continue
                 try:
                     text = open(fpath, "r", errors="ignore").read()
-                    if len(text) > 100000:
-                        text = text[:100000]
+                    if len(text) > 50000:
+                        text = text[:50000]
                 except:
                     continue
 
-                # Chunk based on file type
-                is_code = any(fname.endswith(ext) for ext in [".py", ".js", ".ts", ".tsx", ".jsx", ".java", ".go", ".rs", ".c", ".cpp", ".h", ".rb", ".php", ".cs", ".swift", ".kt"])
+                is_code = any(fname.endswith(ext) for ext in [".py", ".js", ".ts", ".tsx", ".jsx", ".java", ".go", ".rs", ".c", ".cpp", ".h", ".rb", ".php", ".cs", ".swift", ".kt", ".sh", ".sql", ".html", ".css"])
                 if is_code:
                     chunks = chunk_code(text, fname=rel)
                 else:
@@ -391,15 +391,18 @@ async def index_repo_endpoint(req: Request):
         if points and memory_store:
             collection = f"repo_{repo_name.lower().replace('-', '_')}"
             memory_store._ensure_collection(collection)
-            # Batch upsert
             batch_size = 100
             for i in range(0, len(points), batch_size):
                 memory_store.client.upsert(collection, points[i:i+batch_size])
 
         return {"repo": repo_name, "action": action, "chunks_indexed": indexed}
 
-    result = await asyncio.to_thread(do_index)
-    return result
+    try:
+        result = await asyncio.to_thread(do_index)
+        return result
+    except Exception as e:
+        log.error(f"Index error: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.get("/api/repos")
