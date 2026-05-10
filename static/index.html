@@ -13,53 +13,78 @@
   --bg: #0f0f0f; --bg2: #1a1a1a; --bg3: #242424; --bg4: #2e2e2e;
   --text: #e4e4e4; --text2: #999; --accent: #6c8cff; --accent2: #4a6adf;
   --green: #4ade80; --red: #f87171; --border: #333;
+  --orange: #fb923c; --purple: #a78bfa; --cyan: #22d3ee;
 }
 body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
 a { color: var(--accent); text-decoration: none; }
 
 /* Hamburger */
-.hamburger { display: none; background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; padding: 4px 8px; line-height: 1; }
+.hamburger { display: none; background: none; border: none; color: var(--text); font-size: 22px; cursor: pointer; padding: 4px 8px; line-height: 1; }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; }
 .sidebar-overlay.active { display: block; }
 
 /* Sidebar */
 .sidebar { width: 260px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: transform 0.25s ease; }
-.sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
+.sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); }
 .sidebar-header h1 { font-size: 18px; font-weight: 700; background: linear-gradient(90deg, #6c8cff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .sidebar-header .sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.new-chat-btn { width: 100%; padding: 10px; margin: 12px 0; background: var(--accent2); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; }
+.new-chat-btn { width: 100%; padding: 10px; margin: 8px 0; background: var(--accent2); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; }
 .new-chat-btn:hover { background: var(--accent); }
-.conv-list { flex: 1; overflow-y: auto; padding: 8px; }
-.conv-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text2); margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
+
+/* Sidebar sections */
+.sidebar-section { padding: 4px 12px; }
+.sidebar-section-title { font-size: 10px; text-transform: uppercase; color: var(--text2); letter-spacing: 1px; padding: 8px 4px 4px; }
+.conv-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
+.conv-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text2); margin-bottom: 1px; display: flex; align-items: center; gap: 6px; }
 .conv-item:hover { background: var(--bg3); }
 .conv-item.active { background: var(--bg3); color: var(--text); }
 .conv-item .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.conv-item .delete { opacity: 0; color: var(--red); cursor: pointer; font-size: 16px; padding: 0 4px; }
-.conv-item:hover .delete { opacity: 0.6; }
+.conv-item .delete { opacity: 0; color: var(--red); cursor: pointer; font-size: 18px; padding: 2px 4px; flex-shrink: 0; line-height: 1; }
+.conv-item:hover .delete { opacity: 0.7; }
 .conv-item .delete:hover { opacity: 1; }
-.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+
+/* Indexed repos list */
+.repo-list { padding: 4px 8px; }
+.repo-item { padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px; margin-bottom: 1px; }
+.repo-item:hover { background: var(--bg3); }
+.repo-item.active { background: var(--accent2); color: white; }
+.repo-badge { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.repo-item .repo-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repo-item .repo-chunks { font-size: 10px; color: var(--text2); flex-shrink: 0; }
+.repo-item.active .repo-chunks { color: rgba(255,255,255,0.7); }
+
+/* Sidebar tools */
+.sidebar-tools { padding: 4px 8px; border-top: 1px solid var(--border); }
+.tool-btn { width: 100%; padding: 7px 10px; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text2); cursor: pointer; font-size: 12px; text-align: left; margin-bottom: 3px; }
+.tool-btn:hover { background: var(--bg3); color: var(--text); }
+
+/* Sidebar footer */
+.sidebar-footer { padding: 8px 12px; border-top: 1px solid var(--border); }
 .sidebar-footer .status { font-size: 11px; color: var(--text2); }
 .sidebar-footer .status .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
 .sidebar-footer .status .dot.on { background: var(--green); }
 .sidebar-footer .status .dot.off { background: var(--red); }
 
-/* Sidebar tools */
-.sidebar-tools { padding: 8px; border-top: 1px solid var(--border); }
-.tool-btn { width: 100%; padding: 8px 12px; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text2); cursor: pointer; font-size: 12px; text-align: left; margin-bottom: 4px; }
-.tool-btn:hover { background: var(--bg3); color: var(--text); }
-
 /* Main */
-.main { flex: 1; display: flex; flex-direction: column; }
-.topbar { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: var(--bg2); }
-.model-select { background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+/* Topbar */
+.topbar { padding: 8px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: var(--bg2); flex-shrink: 0; }
+.model-select { background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 12px; cursor: pointer; max-width: 140px; }
 .model-select:focus { outline: none; border-color: var(--accent); }
-.topbar-title { font-size: 14px; color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-title { font-size: 13px; color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Project badge */
+.project-badge { display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; cursor: pointer; flex-shrink: 0; border: 1px solid transparent; }
+.project-badge:hover { border-color: var(--border); }
+.project-badge.has-project { background: rgba(108,140,255,0.15); color: var(--accent); }
+.project-badge.no-project { background: var(--bg3); color: var(--text2); }
 
 /* Messages */
-.messages { flex: 1; overflow-y: auto; padding: 20px; }
+.messages { flex: 1; overflow-y: auto; padding: 16px; }
 .messages::-webkit-scrollbar { width: 6px; }
 .messages::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
-.message { max-width: 800px; margin: 0 auto 16px; padding: 16px 20px; border-radius: 12px; line-height: 1.6; font-size: 14px; }
+.message { max-width: 800px; margin: 0 auto 14px; padding: 14px 18px; border-radius: 12px; line-height: 1.6; font-size: 14px; }
 .message.user { background: var(--accent2); color: white; margin-left: auto; margin-right: 0; max-width: 600px; border-radius: 12px 12px 2px 12px; }
 .message.assistant { background: var(--bg3); border: 1px solid var(--border); }
 .message.assistant p { margin-bottom: 8px; }
@@ -75,29 +100,44 @@ a { color: var(--accent); text-decoration: none; }
 @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
 
 /* Welcome screen */
-.welcome { text-align: center; padding: 80px 20px; max-width: 600px; margin: 0 auto; }
-.welcome h2 { font-size: 28px; margin-bottom: 8px; background: linear-gradient(90deg, #6c8cff, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.welcome { text-align: center; padding: 60px 20px; max-width: 600px; margin: 0 auto; }
+.welcome h2 { font-size: 26px; margin-bottom: 8px; background: linear-gradient(90deg, #6c8cff, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .welcome p { color: var(--text2); font-size: 14px; margin-bottom: 24px; }
-.welcome .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; }
-.welcome .feature { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.welcome .features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; }
+.welcome .feature { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
 .welcome .feature .ft { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
 .welcome .feature .fd { font-size: 12px; color: var(--text2); }
 
 /* Input */
-.input-area { padding: 16px 20px; border-top: 1px solid var(--border); background: var(--bg2); }
+.input-area { padding: 10px 16px; border-top: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
 .input-wrap { max-width: 800px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; }
-.input-wrap textarea { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-size: 14px; font-family: inherit; resize: none; min-height: 44px; max-height: 200px; line-height: 1.4; }
+.input-wrap textarea { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px; font-family: inherit; resize: none; min-height: 42px; max-height: 200px; line-height: 1.4; }
 .input-wrap textarea:focus { outline: none; border-color: var(--accent); }
 .input-wrap textarea::placeholder { color: var(--text2); }
-.send-btn { background: var(--accent2); color: white; border: none; border-radius: 10px; width: 44px; height: 44px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.send-btn { background: var(--accent2); color: white; border: none; border-radius: 10px; width: 42px; height: 42px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .send-btn:hover { background: var(--accent); }
 .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Bottom action bar (mobile) */
+.bottom-bar { display: none; border-top: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
+.bottom-bar-inner { display: flex; justify-content: space-around; padding: 6px 0; }
+.bb-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; color: var(--text2); cursor: pointer; padding: 4px 8px; font-size: 10px; border-radius: 6px; }
+.bb-btn .bb-icon { font-size: 18px; }
+.bb-btn.active { color: var(--accent); }
+.bb-btn:hover { color: var(--text); }
+
+/* Status bar */
+.status-bar { padding: 4px 16px; background: var(--bg); border-top: 1px solid var(--border); font-size: 10px; color: var(--text2); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+.status-bar .sb-item { display: flex; align-items: center; gap: 3px; }
+.status-bar .sb-dot { width: 5px; height: 5px; border-radius: 50%; }
+.status-bar .sb-dot.on { background: var(--green); }
+.status-bar .sb-dot.off { background: var(--red); }
 
 /* Modal */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
 .modal-overlay.active { display: flex; }
-.modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; }
-.modal h3 { margin-bottom: 16px; }
+.modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; max-width: 500px; width: 92%; max-height: 90vh; overflow-y: auto; }
+.modal h3 { margin-bottom: 14px; font-size: 16px; }
 .modal input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 10px; color: var(--text); font-size: 14px; margin-bottom: 12px; }
 .modal input:focus { outline: none; border-color: var(--accent); }
 .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
@@ -106,12 +146,12 @@ a { color: var(--accent); text-decoration: none; }
 .modal-btns .primary { background: var(--accent2); color: white; }
 
 /* Search panel */
-.search-results { max-height: 70vh; overflow-y: auto; margin-top: 12px; }
+.search-results { max-height: 65vh; overflow-y: auto; margin-top: 12px; }
 .search-result { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
-.sr-header { display: flex; align-items: center; padding: 8px 12px; gap: 8px; cursor: pointer; }
+.sr-header { display: flex; align-items: center; padding: 8px 10px; gap: 6px; cursor: pointer; }
 .sr-header:hover { background: var(--bg4); }
 .sr-file { color: var(--accent); font-weight: 600; font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sr-type { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--bg); color: var(--text2); text-transform: uppercase; }
+.sr-type { font-size: 9px; padding: 2px 5px; border-radius: 4px; background: var(--bg); color: var(--text2); text-transform: uppercase; }
 .sr-score { color: var(--green); font-size: 12px; font-weight: 600; flex-shrink: 0; }
 .sr-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .sr-actions button { background: var(--bg); border: 1px solid var(--border); color: var(--text2); border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
@@ -122,6 +162,15 @@ a { color: var(--accent); text-decoration: none; }
 .sr-code code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 12px; }
 .sr-copied { color: var(--green) !important; }
 
+/* Project selector modal */
+.project-list { margin: 12px 0; }
+.project-option { padding: 10px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; border: 1px solid var(--border); }
+.project-option:hover { background: var(--bg3); }
+.project-option.active { background: var(--accent2); color: white; border-color: var(--accent2); }
+.project-option .po-name { font-size: 14px; font-weight: 500; flex: 1; }
+.project-option .po-info { font-size: 11px; color: var(--text2); }
+.project-option.active .po-info { color: rgba(255,255,255,0.7); }
+
 @media (max-width: 768px) {
   .hamburger { display: block; }
   .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); }
@@ -129,8 +178,10 @@ a { color: var(--accent); text-decoration: none; }
   .message { padding: 12px; }
   .message.user { max-width: 85%; }
   .welcome .features { grid-template-columns: 1fr; }
-  .topbar { padding: 8px 12px; }
-  .input-area { padding: 10px 12px; }
+  .welcome { padding: 40px 16px; }
+  .topbar { padding: 6px 10px; }
+  .input-area { padding: 8px 10px; }
+  .bottom-bar { display: block; }
 }
 </style>
 </head>
@@ -141,13 +192,15 @@ a { color: var(--accent); text-decoration: none; }
     <h1>TriVox Chat</h1>
     <div class="sub">RAG + Memory + Code Search</div>
   </div>
-  <div style="padding: 8px 12px;">
+  <div style="padding: 6px 12px;">
     <button class="new-chat-btn" onclick="newChat()">+ Nouvelle conversation</button>
   </div>
+  <div class="sidebar-section-title" style="padding: 4px 16px;">Conversations</div>
   <div class="conv-list" id="convList"></div>
+  <div class="sidebar-section-title" style="padding: 4px 16px;">Repos indexes</div>
+  <div class="repo-list" id="repoList"></div>
   <div class="sidebar-tools">
     <button class="tool-btn" onclick="openRepoModal()">+ Indexer un repo GitHub</button>
-    <button class="tool-btn" onclick="openSearchModal()">Recherche code / memoire</button>
   </div>
   <div class="sidebar-footer">
     <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Connexion...</span></div>
@@ -159,6 +212,10 @@ a { color: var(--accent); text-decoration: none; }
 <div class="main">
   <div class="topbar">
     <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">&#9776;</button>
+    <div class="project-badge no-project" id="projectBadge" onclick="openProjectModal()">
+      <span id="projectIcon">&#128172;</span>
+      <span id="projectName">Chat general</span>
+    </div>
     <select class="model-select" id="modelSelect"></select>
     <div class="topbar-title" id="topbarTitle">Nouvelle conversation</div>
   </div>
@@ -167,10 +224,10 @@ a { color: var(--accent); text-decoration: none; }
       <h2>TriVox Chat</h2>
       <p>Chat local avec RAG, memoire persistante et recherche de code — propulse par TriVox3</p>
       <div class="features">
-        <div class="feature"><div class="ft">Chat Ollama</div><div class="fd">Tous les modeles Ollama disponibles avec streaming</div></div>
-        <div class="feature"><div class="ft">Code Search</div><div class="fd">Indexe tes repos GitHub et cherche par description naturelle</div></div>
-        <div class="feature"><div class="ft">Memoire</div><div class="fd">Se souvient des conversations passees grace a TriVox3 + Qdrant</div></div>
-        <div class="feature"><div class="ft">Trilingue</div><div class="fd">Francais, Anglais et Code — nativement</div></div>
+        <div class="feature"><div class="ft">Chat Ollama</div><div class="fd">Tous les modeles Ollama avec streaming</div></div>
+        <div class="feature"><div class="ft">Code Search</div><div class="fd">Indexe tes repos GitHub, cherche par description</div></div>
+        <div class="feature"><div class="ft">Memoire</div><div class="fd">Se souvient des conversations passees</div></div>
+        <div class="feature"><div class="ft">Trilingue</div><div class="fd">Francais, Anglais et Code</div></div>
       </div>
     </div>
   </div>
@@ -179,6 +236,20 @@ a { color: var(--accent); text-decoration: none; }
       <textarea id="chatInput" placeholder="Ecris un message..." rows="1" onkeydown="handleKey(event)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">&#9654;</button>
     </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="bottom-bar-inner">
+      <button class="bb-btn active" id="bbChat" onclick="switchMode('chat')"><span class="bb-icon">&#128172;</span>Chat</button>
+      <button class="bb-btn" id="bbCode" onclick="switchMode('code')"><span class="bb-icon">&#128269;</span>Code</button>
+      <button class="bb-btn" id="bbMemory" onclick="switchMode('memory')"><span class="bb-icon">&#129504;</span>Memoire</button>
+      <button class="bb-btn" id="bbRepos" onclick="switchMode('repos')"><span class="bb-icon">&#128193;</span>Repos</button>
+    </div>
+  </div>
+  <div class="status-bar" id="statusBar">
+    <span class="sb-item"><span class="sb-dot" id="sbDotEncoder"></span><span id="sbEncoder">TriVox</span></span>
+    <span class="sb-item" id="sbProjectInfo"></span>
+    <span class="sb-item" id="sbModelInfo"></span>
+    <span class="sb-item"><span class="sb-dot" id="sbDotMemory"></span><span id="sbMemory">Memoire</span></span>
   </div>
 </div>
 
@@ -199,12 +270,23 @@ a { color: var(--accent); text-decoration: none; }
 <!-- Search Modal -->
 <div class="modal-overlay" id="searchModal">
   <div class="modal" style="max-width:800px;width:95%;">
-    <h3>Recherche code / memoire</h3>
+    <h3 id="searchTitle">Recherche code</h3>
     <input type="text" id="searchQuery" placeholder="Decris ce que tu cherches..." onkeydown="if(event.key==='Enter')doSearch()">
     <div class="search-results" id="searchResults"></div>
     <div class="modal-btns">
       <button class="cancel" onclick="closeModal('searchModal')">Fermer</button>
       <button class="primary" onclick="doSearch()">Chercher</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project Selector Modal -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal">
+    <h3>Projet actif</h3>
+    <div class="project-list" id="projectList"></div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeModal('projectModal')">Fermer</button>
     </div>
   </div>
 </div>
@@ -215,10 +297,13 @@ marked.setOptions({ highlight: (code, lang) => { try { return lang ? hljs.highli
 let currentConvId = null;
 let isStreaming = false;
 let models = [];
+let activeProject = null; // { name, collection, chunks }
+let indexedRepos = [];
+
+const repoColors = ['#6c8cff','#a78bfa','#f472b6','#4ade80','#fb923c','#22d3ee','#f87171','#facc15'];
 
 async function init() {
-  await loadModels();
-  await loadConversations();
+  await Promise.all([loadModels(), loadConversations(), loadRepos()]);
   checkStatus();
 }
 
@@ -232,12 +317,12 @@ async function loadModels() {
     models.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m.name;
-      opt.textContent = m.name;
+      opt.textContent = m.name.split(':')[0];
       sel.appendChild(opt);
     });
-    // Default to qwen2.5:7b-instruct
     const pref = models.find(m => m.name.includes('qwen2.5') && m.name.includes('instruct'));
     if (pref) sel.value = pref.name;
+    updateStatusBar();
   } catch(e) { console.error('Failed to load models:', e); }
 }
 
@@ -250,11 +335,99 @@ async function loadConversations() {
     (data.conversations || []).forEach(c => {
       const div = document.createElement('div');
       div.className = 'conv-item' + (c.id === currentConvId ? ' active' : '');
-      div.innerHTML = `<span class="title">${escHtml(c.title)}</span><span class="delete" onclick="event.stopPropagation();deleteConv('${c.id}')">&times;</span>`;
+      div.innerHTML = `<span class="title">${escHtml(c.title)}</span><span class="delete" onclick="event.stopPropagation();confirmDelete('${c.id}','${escHtml(c.title).replace(/'/g,"\\'")}')">&#128465;</span>`;
       div.onclick = () => { closeSidebar(); loadConversation(c.id); };
       list.appendChild(div);
     });
   } catch(e) {}
+}
+
+async function loadRepos() {
+  try {
+    const resp = await fetch('/api/memory/stats');
+    const data = await resp.json();
+    indexedRepos = (data.collections || []).filter(c => c.name.startsWith('repo_')).map((c, i) => ({
+      name: c.name.replace('repo_', ''),
+      collection: c.name,
+      chunks: c.points || 0,
+      color: repoColors[i % repoColors.length],
+    }));
+    renderRepoList();
+    updateStatusBar();
+  } catch(e) {}
+}
+
+function renderRepoList() {
+  const list = document.getElementById('repoList');
+  list.innerHTML = '';
+  if (!indexedRepos.length) {
+    list.innerHTML = '<div style="padding:4px 10px;font-size:11px;color:var(--text2)">Aucun repo indexe</div>';
+    return;
+  }
+  indexedRepos.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'repo-item' + (activeProject?.collection === r.collection ? ' active' : '');
+    div.innerHTML = `<span class="repo-badge" style="background:${r.color}"></span><span class="repo-name">${escHtml(r.name)}</span><span class="repo-chunks">${(r.chunks/1000).toFixed(1)}k</span>`;
+    div.onclick = () => { setActiveProject(r); closeSidebar(); };
+    list.appendChild(div);
+  });
+}
+
+function setActiveProject(repo) {
+  if (activeProject?.collection === repo?.collection) {
+    activeProject = null;
+  } else {
+    activeProject = repo;
+  }
+  updateProjectBadge();
+  renderRepoList();
+  updateStatusBar();
+  closeModal('projectModal');
+}
+
+function updateProjectBadge() {
+  const badge = document.getElementById('projectBadge');
+  const icon = document.getElementById('projectIcon');
+  const name = document.getElementById('projectName');
+  if (activeProject) {
+    badge.className = 'project-badge has-project';
+    icon.textContent = '\u{1F4C1}';
+    name.textContent = activeProject.name;
+  } else {
+    badge.className = 'project-badge no-project';
+    icon.textContent = '\u{1F4AC}';
+    name.textContent = 'Chat general';
+  }
+}
+
+function openProjectModal() {
+  const list = document.getElementById('projectList');
+  list.innerHTML = '';
+  // General chat option
+  const gen = document.createElement('div');
+  gen.className = 'project-option' + (!activeProject ? ' active' : '');
+  gen.innerHTML = '<span class="po-name">&#128172; Chat general</span><span class="po-info">Sans projet</span>';
+  gen.onclick = () => setActiveProject(null);
+  list.appendChild(gen);
+  // Repo options
+  indexedRepos.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'project-option' + (activeProject?.collection === r.collection ? ' active' : '');
+    div.innerHTML = `<span class="repo-badge" style="background:${r.color}"></span><span class="po-name">${escHtml(r.name)}</span><span class="po-info">${r.chunks.toLocaleString()} chunks</span>`;
+    div.onclick = () => setActiveProject(r);
+    list.appendChild(div);
+  });
+  document.getElementById('projectModal').classList.add('active');
+}
+
+function updateStatusBar() {
+  const model = document.getElementById('modelSelect')?.value || '';
+  document.getElementById('sbModelInfo').textContent = model.split(':')[0];
+  if (activeProject) {
+    document.getElementById('sbProjectInfo').textContent = `${activeProject.name} ${(activeProject.chunks/1000).toFixed(1)}k chunks`;
+  } else {
+    document.getElementById('sbProjectInfo').textContent = '';
+  }
 }
 
 async function loadConversation(id) {
@@ -272,7 +445,6 @@ async function loadConversation(id) {
 function renderMessages(messages) {
   const container = document.getElementById('messages');
   document.getElementById('welcome').style.display = messages.length ? 'none' : 'block';
-  // Remove all message divs but keep welcome
   container.querySelectorAll('.message').forEach(el => el.remove());
   messages.forEach(m => {
     const div = document.createElement('div');
@@ -298,6 +470,10 @@ async function newChat() {
   loadConversations();
 }
 
+function confirmDelete(id, title) {
+  if (confirm(`Supprimer "${title}" ?`)) deleteConv(id);
+}
+
 async function deleteConv(id) {
   await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
   if (currentConvId === id) newChat();
@@ -316,21 +492,18 @@ async function sendMessage() {
   document.getElementById('sendBtn').disabled = true;
   document.getElementById('welcome').style.display = 'none';
 
-  // Add user message
   const container = document.getElementById('messages');
   const userDiv = document.createElement('div');
   userDiv.className = 'message user';
   userDiv.textContent = text;
   container.appendChild(userDiv);
 
-  // Create assistant message placeholder
   const assistDiv = document.createElement('div');
   assistDiv.className = 'message assistant';
   assistDiv.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
   container.appendChild(assistDiv);
   container.scrollTop = container.scrollHeight;
 
-  // Build messages array
   const existingMessages = [];
   container.querySelectorAll('.message').forEach(el => {
     if (el === assistDiv) return;
@@ -349,13 +522,13 @@ async function sendMessage() {
         messages: existingMessages,
         conversation_id: currentConvId,
         stream: true,
+        project: activeProject?.name || null,
       }),
     });
 
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let fullText = '';
-    let convIdFromResponse = currentConvId;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -372,32 +545,24 @@ async function sendMessage() {
             assistDiv.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
             container.scrollTop = container.scrollHeight;
           }
-          if (data.conversation_id) convIdFromResponse = data.conversation_id;
+          if (data.conversation_id) currentConvId = data.conversation_id;
           if (data.error) { assistDiv.innerHTML += `<p style="color:var(--red)">${escHtml(data.error)}</p>`; }
         } catch(e) {}
       }
     }
 
-    // Refresh conversations to get updated title
     setTimeout(() => loadConversations(), 500);
-    // If we didn't have a conv ID, try to find it
-    if (!currentConvId) {
-      const convs = await (await fetch('/api/conversations')).json();
-      if (convs.conversations?.length) {
-        currentConvId = convs.conversations[0].id;
-      }
-    }
   } catch(e) {
     assistDiv.innerHTML = `<p style="color:var(--red)">Erreur: ${escHtml(e.message)}</p>`;
   }
 
   isStreaming = false;
   document.getElementById('sendBtn').disabled = false;
+  updateStatusBar();
 }
 
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  // Auto-resize
   const t = e.target;
   setTimeout(() => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }, 0);
 }
@@ -406,17 +571,23 @@ async function checkStatus() {
   try {
     const resp = await fetch('/api/status');
     const data = await resp.json();
-    const dot = document.getElementById('statusDot');
-    const text = document.getElementById('statusText');
-    dot.className = 'dot on';
+    document.getElementById('statusDot').className = 'dot on';
     let parts = ['Ollama OK'];
     if (data.encoder === 'loaded') parts.push(`TriVox ${data.embed_dim}d`);
     if (data.memory === 'active') parts.push('Memory ON');
-    text.textContent = parts.join(' | ');
+    document.getElementById('statusText').textContent = parts.join(' | ');
+    // Status bar
+    document.getElementById('sbDotEncoder').className = 'sb-dot ' + (data.encoder === 'loaded' ? 'on' : 'off');
+    document.getElementById('sbEncoder').textContent = data.encoder === 'loaded' ? `TriVox ${data.embed_dim}d` : 'TriVox OFF';
+    document.getElementById('sbDotMemory').className = 'sb-dot ' + (data.memory === 'active' ? 'on' : 'off');
+    document.getElementById('sbMemory').textContent = data.memory === 'active' ? 'Memoire ON' : 'Memoire OFF';
   } catch(e) {
     document.getElementById('statusDot').className = 'dot off';
     document.getElementById('statusText').textContent = 'Deconnecte';
+    document.getElementById('sbDotEncoder').className = 'sb-dot off';
+    document.getElementById('sbDotMemory').className = 'sb-dot off';
   }
+  updateStatusBar();
 }
 
 async function indexRepo() {
@@ -461,6 +632,7 @@ async function indexRepo() {
             } else {
               status.textContent = `${data.repo} — ${data.chunks_indexed} chunks indexes`;
               status.style.color = 'var(--green)';
+              loadRepos();
             }
           }
         } catch(e) {}
@@ -480,10 +652,12 @@ async function doSearch() {
   const container = document.getElementById('searchResults');
   container.innerHTML = '<div style="color:var(--text2)">Recherche...</div>';
   try {
+    const body = { query, top_k: 10 };
+    if (activeProject) body.repo = activeProject.name;
     const resp = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, top_k: 10 }),
+      body: JSON.stringify(body),
     });
     const data = await resp.json();
     if (!data.results?.length) {
@@ -529,12 +703,24 @@ function copyResult(btn, idx) {
   });
 }
 
+function switchMode(mode) {
+  document.querySelectorAll('.bb-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('bb' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+  if (mode === 'chat') { /* already in chat */ }
+  else if (mode === 'code') { openSearchModal(); }
+  else if (mode === 'memory') { openMemoryView(); }
+  else if (mode === 'repos') { openRepoModal(); }
+}
+
+function openMemoryView() {
+  // Show memory stats in search modal
+  document.getElementById('searchTitle').textContent = 'Memoire';
+  openSearchModal();
+}
+
 function toggleSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  const isOpen = sidebar.classList.contains('open');
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('active');
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('active');
 }
 
 function closeSidebar() {
@@ -549,10 +735,11 @@ function openSearchModal() { closeSidebar(); document.getElementById('searchModa
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-// Close modal on overlay click
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('active'); });
 });
+
+document.getElementById('modelSelect').addEventListener('change', updateStatusBar);
 
 init();
 setInterval(checkStatus, 30000);
