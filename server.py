@@ -488,7 +488,21 @@ async def search(req: Request):
         except Exception as e:
             log.warning(f"Search error: {e}")
 
-    results.sort(key=lambda x: x["score"], reverse=True)
+    # Deduplicate by text content (keep highest score)
+    seen = {}
+    for r in results:
+        key = r["text"][:200]
+        if key not in seen or r["score"] > seen[key]["score"]:
+            seen[key] = r
+    results = list(seen.values())
+
+    # Sort: code results get a boost over docs
+    for r in results:
+        r["_sort"] = r["score"] + (0.05 if r.get("type") == "code" else 0)
+    results.sort(key=lambda x: x["_sort"], reverse=True)
+    for r in results:
+        del r["_sort"]
+
     return {"results": results[:top_k], "query": query}
 
 
