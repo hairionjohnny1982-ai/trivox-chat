@@ -460,14 +460,14 @@ async def search(req: Request):
     results = []
 
     if memory_store:
-        # Search in repo collections
+        # Search ONLY in repo_* collections (not mem_* which pollute code results)
         try:
             collections = memory_store.client.get_collections().collections
             for col in collections:
                 name = col.name
-                if repo and f"repo_{repo.lower()}" not in name:
+                if not name.startswith("repo_"):
                     continue
-                if not name.startswith("repo_") and not name.startswith("mem_"):
+                if repo and f"repo_{repo.lower().replace('-','_')}" != name:
                     continue
                 try:
                     hits = memory_store.client.query_points(
