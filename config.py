@@ -1,0 +1,21 @@
+import os
+OLLAMA_URL = "http://localhost:11434"
+HOST = "0.0.0.0"
+PORT = 3000
+QDRANT_HOST = "localhost"
+QDRANT_PORT = 6333
+MODEL_PATH = "/home/aque/trivox2_step120000.pt"
+TOK_FR = "/home/aque/trivox-memory-v3/tokenizers/fr.model"
+TOK_EN = "/home/aque/trivox-memory-v3/tokenizers/en.model"
+TOK_CODE = "/home/aque/trivox-memory-v3/tokenizers/code.json"
+MAX_SEQ_LEN = 256
+EMBED_DIM = 768
+MAX_MEMORIES_INJECT = 8
+MIN_SCORE = 0.10
+CHUNK_MAX_TOKENS = 100
+CHUNK_OVERLAP = 20
+MAX_MEMORIES_PER_COLLECTION = 5000
+DATA_DIR = "/home/aque/trivox-chat/data"
+REPOS_DIR = os.path.join(DATA_DIR, "repos")
+CONVERSATIONS_DIR = os.path.join(DATA_DIR, "conversations")
+LOG_LEVEL = "INFO"

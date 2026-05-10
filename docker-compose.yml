@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  trivox-chat:
+    build: .
+    container_name: trivox-chat
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/data
+      - ${MODEL_PATH:-/home/aque/trivox2_step120000.pt}:/data/model/trivox_latest.pt:ro
+      - ${TOKENIZERS_DIR:-/home/aque/trivox-memory-v3/tokenizers}:/data/tokenizers:ro
+    environment:
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - MODEL_PATH=/data/model/trivox_latest.pt
+      - TOK_FR=/data/tokenizers/fr.model
+      - TOK_EN=/data/tokenizers/en.model
+      - TOK_CODE=/data/tokenizers/code.json
+      - DATA_DIR=/data
+      - PORT=3000
+      - EMBED_DIM=768
+    depends_on:
+      - qdrant
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: trivox-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:

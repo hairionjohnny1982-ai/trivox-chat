@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+data/
+*.pt
+*.model
+*.json
+!requirements.txt
+!docker-compose.yml
+!static/*.html
+!package.json

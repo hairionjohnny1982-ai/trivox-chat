@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TriVox Chat</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #0f0f0f; --bg2: #1a1a1a; --bg3: #242424; --bg4: #2e2e2e;
+  --text: #e4e4e4; --text2: #999; --accent: #6c8cff; --accent2: #4a6adf;
+  --green: #4ade80; --red: #f87171; --border: #333;
+}
+body { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+a { color: var(--accent); text-decoration: none; }
+
+/* Hamburger */
+.hamburger { display: none; background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; padding: 4px 8px; line-height: 1; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; }
+.sidebar-overlay.active { display: block; }
+
+/* Sidebar */
+.sidebar { width: 260px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: transform 0.25s ease; }
+.sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
+.sidebar-header h1 { font-size: 18px; font-weight: 700; background: linear-gradient(90deg, #6c8cff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.sidebar-header .sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.new-chat-btn { width: 100%; padding: 10px; margin: 12px 0; background: var(--accent2); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; }
+.new-chat-btn:hover { background: var(--accent); }
+.conv-list { flex: 1; overflow-y: auto; padding: 8px; }
+.conv-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text2); margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
+.conv-item:hover { background: var(--bg3); }
+.conv-item.active { background: var(--bg3); color: var(--text); }
+.conv-item .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.conv-item .delete { opacity: 0; color: var(--red); cursor: pointer; font-size: 16px; padding: 0 4px; }
+.conv-item:hover .delete { opacity: 0.6; }
+.conv-item .delete:hover { opacity: 1; }
+.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+.sidebar-footer .status { font-size: 11px; color: var(--text2); }
+.sidebar-footer .status .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.sidebar-footer .status .dot.on { background: var(--green); }
+.sidebar-footer .status .dot.off { background: var(--red); }
+
+/* Sidebar tools */
+.sidebar-tools { padding: 8px; border-top: 1px solid var(--border); }
+.tool-btn { width: 100%; padding: 8px 12px; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text2); cursor: pointer; font-size: 12px; text-align: left; margin-bottom: 4px; }
+.tool-btn:hover { background: var(--bg3); color: var(--text); }
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; }
+.topbar { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: var(--bg2); }
+.model-select { background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+.model-select:focus { outline: none; border-color: var(--accent); }
+.topbar-title { font-size: 14px; color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Messages */
+.messages { flex: 1; overflow-y: auto; padding: 20px; }
+.messages::-webkit-scrollbar { width: 6px; }
+.messages::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+.message { max-width: 800px; margin: 0 auto 16px; padding: 16px 20px; border-radius: 12px; line-height: 1.6; font-size: 14px; }
+.message.user { background: var(--accent2); color: white; margin-left: auto; margin-right: 0; max-width: 600px; border-radius: 12px 12px 2px 12px; }
+.message.assistant { background: var(--bg3); border: 1px solid var(--border); }
+.message.assistant p { margin-bottom: 8px; }
+.message.assistant p:last-child { margin-bottom: 0; }
+.message.assistant pre { background: var(--bg); border-radius: 8px; padding: 12px; margin: 8px 0; overflow-x: auto; border: 1px solid var(--border); }
+.message.assistant code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; }
+.message.assistant code:not(pre code) { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+.message .time { font-size: 10px; color: var(--text2); margin-top: 6px; }
+.typing { display: inline-flex; gap: 4px; padding: 8px 0; }
+.typing span { width: 6px; height: 6px; background: var(--text2); border-radius: 50%; animation: bounce 1.4s infinite; }
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
+
+/* Welcome screen */
+.welcome { text-align: center; padding: 80px 20px; max-width: 600px; margin: 0 auto; }
+.welcome h2 { font-size: 28px; margin-bottom: 8px; background: linear-gradient(90deg, #6c8cff, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.welcome p { color: var(--text2); font-size: 14px; margin-bottom: 24px; }
+.welcome .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; }
+.welcome .feature { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.welcome .feature .ft { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.welcome .feature .fd { font-size: 12px; color: var(--text2); }
+
+/* Input */
+.input-area { padding: 16px 20px; border-top: 1px solid var(--border); background: var(--bg2); }
+.input-wrap { max-width: 800px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; }
+.input-wrap textarea { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-size: 14px; font-family: inherit; resize: none; min-height: 44px; max-height: 200px; line-height: 1.4; }
+.input-wrap textarea:focus { outline: none; border-color: var(--accent); }
+.input-wrap textarea::placeholder { color: var(--text2); }
+.send-btn { background: var(--accent2); color: white; border: none; border-radius: 10px; width: 44px; height: 44px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.send-btn:hover { background: var(--accent); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.active { display: flex; }
+.modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; }
+.modal h3 { margin-bottom: 16px; }
+.modal input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 10px; color: var(--text); font-size: 14px; margin-bottom: 12px; }
+.modal input:focus { outline: none; border-color: var(--accent); }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-btns button { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; }
+.modal-btns .cancel { background: var(--bg4); color: var(--text2); }
+.modal-btns .primary { background: var(--accent2); color: white; }
+
+/* Search panel */
+.search-results { max-height: 400px; overflow-y: auto; margin-top: 12px; }
+.search-result { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 12px; }
+.search-result .file { color: var(--accent); font-weight: 600; }
+.search-result .score { color: var(--green); float: right; }
+.search-result .snippet { color: var(--text2); margin-top: 4px; white-space: pre-wrap; font-family: monospace; font-size: 11px; max-height: 100px; overflow: hidden; }
+
+@media (max-width: 768px) {
+  .hamburger { display: block; }
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .message { padding: 12px; }
+  .message.user { max-width: 85%; }
+  .welcome .features { grid-template-columns: 1fr; }
+  .topbar { padding: 8px 12px; }
+  .input-area { padding: 10px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>TriVox Chat</h1>
+    <div class="sub">RAG + Memory + Code Search</div>
+  </div>
+  <div style="padding: 8px 12px;">
+    <button class="new-chat-btn" onclick="newChat()">+ Nouvelle conversation</button>
+  </div>
+  <div class="conv-list" id="convList"></div>
+  <div class="sidebar-tools">
+    <button class="tool-btn" onclick="openRepoModal()">+ Indexer un repo GitHub</button>
+    <button class="tool-btn" onclick="openSearchModal()">Recherche code / memoire</button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Connexion...</span></div>
+  </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<div class="main">
+  <div class="topbar">
+    <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">&#9776;</button>
+    <select class="model-select" id="modelSelect"></select>
+    <div class="topbar-title" id="topbarTitle">Nouvelle conversation</div>
+  </div>
+  <div class="messages" id="messages">
+    <div class="welcome" id="welcome">
+      <h2>TriVox Chat</h2>
+      <p>Chat local avec RAG, memoire persistante et recherche de code — propulse par TriVox3</p>
+      <div class="features">
+        <div class="feature"><div class="ft">Chat Ollama</div><div class="fd">Tous les modeles Ollama disponibles avec streaming</div></div>
+        <div class="feature"><div class="ft">Code Search</div><div class="fd">Indexe tes repos GitHub et cherche par description naturelle</div></div>
+        <div class="feature"><div class="ft">Memoire</div><div class="fd">Se souvient des conversations passees grace a TriVox3 + Qdrant</div></div>
+        <div class="feature"><div class="ft">Trilingue</div><div class="fd">Francais, Anglais et Code — nativement</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <div class="input-wrap">
+      <textarea id="chatInput" placeholder="Ecris un message..." rows="1" onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">&#9654;</button>
+    </div>
+  </div>
+</div>
+
+<!-- Repo Modal -->
+<div class="modal-overlay" id="repoModal">
+  <div class="modal">
+    <h3>Indexer un repo GitHub</h3>
+    <input type="text" id="repoUrl" placeholder="https://github.com/user/repo">
+    <div id="repoStatus" style="font-size:12px;color:var(--text2);margin-bottom:12px;"></div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeModal('repoModal')">Annuler</button>
+      <button class="primary" onclick="indexRepo()">Indexer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Search Modal -->
+<div class="modal-overlay" id="searchModal">
+  <div class="modal" style="max-width:700px;">
+    <h3>Recherche code / memoire</h3>
+    <input type="text" id="searchQuery" placeholder="Decris ce que tu cherches..." onkeydown="if(event.key==='Enter')doSearch()">
+    <div class="search-results" id="searchResults"></div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeModal('searchModal')">Fermer</button>
+      <button class="primary" onclick="doSearch()">Chercher</button>
+    </div>
+  </div>
+</div>
+
+<script>
+marked.setOptions({ highlight: (code, lang) => { try { return lang ? hljs.highlight(code, {language: lang}).value : hljs.highlightAuto(code).value; } catch(e) { return code; } } });
+
+let currentConvId = null;
+let isStreaming = false;
+let models = [];
+
+async function init() {
+  await loadModels();
+  await loadConversations();
+  checkStatus();
+}
+
+async function loadModels() {
+  try {
+    const resp = await fetch('/api/models');
+    const data = await resp.json();
+    models = data.models || [];
+    const sel = document.getElementById('modelSelect');
+    sel.innerHTML = '';
+    models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = m.name;
+      sel.appendChild(opt);
+    });
+    // Default to qwen2.5:7b-instruct
+    const pref = models.find(m => m.name.includes('qwen2.5') && m.name.includes('instruct'));
+    if (pref) sel.value = pref.name;
+  } catch(e) { console.error('Failed to load models:', e); }
+}
+
+async function loadConversations() {
+  try {
+    const resp = await fetch('/api/conversations');
+    const data = await resp.json();
+    const list = document.getElementById('convList');
+    list.innerHTML = '';
+    (data.conversations || []).forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'conv-item' + (c.id === currentConvId ? ' active' : '');
+      div.innerHTML = `<span class="title">${escHtml(c.title)}</span><span class="delete" onclick="event.stopPropagation();deleteConv('${c.id}')">&times;</span>`;
+      div.onclick = () => { closeSidebar(); loadConversation(c.id); };
+      list.appendChild(div);
+    });
+  } catch(e) {}
+}
+
+async function loadConversation(id) {
+  try {
+    const resp = await fetch(`/api/conversations/${id}`);
+    const conv = await resp.json();
+    currentConvId = id;
+    document.getElementById('topbarTitle').textContent = conv.title || 'Chat';
+    if (conv.model) document.getElementById('modelSelect').value = conv.model;
+    renderMessages(conv.messages || []);
+    loadConversations();
+  } catch(e) {}
+}
+
+function renderMessages(messages) {
+  const container = document.getElementById('messages');
+  document.getElementById('welcome').style.display = messages.length ? 'none' : 'block';
+  // Remove all message divs but keep welcome
+  container.querySelectorAll('.message').forEach(el => el.remove());
+  messages.forEach(m => {
+    const div = document.createElement('div');
+    div.className = `message ${m.role}`;
+    if (m.role === 'assistant') {
+      div.innerHTML = marked.parse(m.content || '');
+      div.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+    } else {
+      div.textContent = m.content;
+    }
+    container.appendChild(div);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+async function newChat() {
+  closeSidebar();
+  currentConvId = null;
+  document.getElementById('topbarTitle').textContent = 'Nouvelle conversation';
+  document.getElementById('messages').querySelectorAll('.message').forEach(el => el.remove());
+  document.getElementById('welcome').style.display = 'block';
+  document.getElementById('chatInput').value = '';
+  loadConversations();
+}
+
+async function deleteConv(id) {
+  await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
+  if (currentConvId === id) newChat();
+  else loadConversations();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || isStreaming) return;
+
+  const model = document.getElementById('modelSelect').value;
+  input.value = '';
+  input.style.height = 'auto';
+  isStreaming = true;
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('welcome').style.display = 'none';
+
+  // Add user message
+  const container = document.getElementById('messages');
+  const userDiv = document.createElement('div');
+  userDiv.className = 'message user';
+  userDiv.textContent = text;
+  container.appendChild(userDiv);
+
+  // Create assistant message placeholder
+  const assistDiv = document.createElement('div');
+  assistDiv.className = 'message assistant';
+  assistDiv.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  container.appendChild(assistDiv);
+  container.scrollTop = container.scrollHeight;
+
+  // Build messages array
+  const existingMessages = [];
+  container.querySelectorAll('.message').forEach(el => {
+    if (el === assistDiv) return;
+    existingMessages.push({
+      role: el.classList.contains('user') ? 'user' : 'assistant',
+      content: el.textContent || el.innerText,
+    });
+  });
+
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: existingMessages,
+        conversation_id: currentConvId,
+        stream: true,
+      }),
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let convIdFromResponse = currentConvId;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.token) {
+            fullText += data.token;
+            assistDiv.innerHTML = marked.parse(fullText);
+            assistDiv.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+            container.scrollTop = container.scrollHeight;
+          }
+          if (data.conversation_id) convIdFromResponse = data.conversation_id;
+          if (data.error) { assistDiv.innerHTML += `<p style="color:var(--red)">${escHtml(data.error)}</p>`; }
+        } catch(e) {}
+      }
+    }
+
+    // Refresh conversations to get updated title
+    setTimeout(() => loadConversations(), 500);
+    // If we didn't have a conv ID, try to find it
+    if (!currentConvId) {
+      const convs = await (await fetch('/api/conversations')).json();
+      if (convs.conversations?.length) {
+        currentConvId = convs.conversations[0].id;
+      }
+    }
+  } catch(e) {
+    assistDiv.innerHTML = `<p style="color:var(--red)">Erreur: ${escHtml(e.message)}</p>`;
+  }
+
+  isStreaming = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  // Auto-resize
+  const t = e.target;
+  setTimeout(() => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }, 0);
+}
+
+async function checkStatus() {
+  try {
+    const resp = await fetch('/api/status');
+    const data = await resp.json();
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    dot.className = 'dot on';
+    let parts = ['Ollama OK'];
+    if (data.encoder === 'loaded') parts.push(`TriVox ${data.embed_dim}d`);
+    if (data.memory === 'active') parts.push('Memory ON');
+    text.textContent = parts.join(' | ');
+  } catch(e) {
+    document.getElementById('statusDot').className = 'dot off';
+    document.getElementById('statusText').textContent = 'Deconnecte';
+  }
+}
+
+async function indexRepo() {
+  const url = document.getElementById('repoUrl').value.trim();
+  if (!url) return;
+  const status = document.getElementById('repoStatus');
+  status.textContent = 'Indexation en cours...';
+  try {
+    const resp = await fetch('/api/repos/index', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    const data = await resp.json();
+    status.textContent = `${data.action} "${data.repo}" — ${data.chunks_indexed} chunks indexes`;
+    status.style.color = 'var(--green)';
+  } catch(e) {
+    status.textContent = 'Erreur: ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+}
+
+async function doSearch() {
+  const query = document.getElementById('searchQuery').value.trim();
+  if (!query) return;
+  const container = document.getElementById('searchResults');
+  container.innerHTML = '<div style="color:var(--text2)">Recherche...</div>';
+  try {
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, top_k: 10 }),
+    });
+    const data = await resp.json();
+    if (!data.results?.length) {
+      container.innerHTML = '<div style="color:var(--text2)">Aucun resultat</div>';
+      return;
+    }
+    container.innerHTML = '';
+    data.results.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'search-result';
+      div.innerHTML = `<span class="file">${escHtml(r.file || r.repo)}</span><span class="score">${(r.score*100).toFixed(1)}%</span><div class="snippet">${escHtml(r.text?.slice(0, 300) || '')}</div>`;
+      container.appendChild(div);
+    });
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--red)">Erreur: ${e.message}</div>`;
+  }
+}
+
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const isOpen = sidebar.classList.contains('open');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('active');
+}
+
+function closeSidebar() {
+  if (window.innerWidth <= 768) {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  }
+}
+
+function openRepoModal() { closeSidebar(); document.getElementById('repoModal').classList.add('active'); }
+function openSearchModal() { closeSidebar(); document.getElementById('searchModal').classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('active'); });
+});
+
+init();
+setInterval(checkStatus, 30000);
+</script>
+</body>
+</html>
