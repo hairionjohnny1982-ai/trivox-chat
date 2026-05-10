@@ -106,11 +106,21 @@ a { color: var(--accent); text-decoration: none; }
 .modal-btns .primary { background: var(--accent2); color: white; }
 
 /* Search panel */
-.search-results { max-height: 400px; overflow-y: auto; margin-top: 12px; }
-.search-result { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 12px; }
-.search-result .file { color: var(--accent); font-weight: 600; }
-.search-result .score { color: var(--green); float: right; }
-.search-result .snippet { color: var(--text2); margin-top: 4px; white-space: pre-wrap; font-family: monospace; font-size: 11px; max-height: 100px; overflow: hidden; }
+.search-results { max-height: 70vh; overflow-y: auto; margin-top: 12px; }
+.search-result { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+.sr-header { display: flex; align-items: center; padding: 8px 12px; gap: 8px; cursor: pointer; }
+.sr-header:hover { background: var(--bg4); }
+.sr-file { color: var(--accent); font-weight: 600; font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-type { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--bg); color: var(--text2); text-transform: uppercase; }
+.sr-score { color: var(--green); font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.sr-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.sr-actions button { background: var(--bg); border: 1px solid var(--border); color: var(--text2); border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
+.sr-actions button:hover { background: var(--accent2); color: white; border-color: var(--accent2); }
+.sr-code { display: none; border-top: 1px solid var(--border); }
+.sr-code.open { display: block; }
+.sr-code pre { margin: 0; padding: 12px; overflow-x: auto; font-size: 12px; line-height: 1.5; max-height: 400px; overflow-y: auto; background: var(--bg); }
+.sr-code code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 12px; }
+.sr-copied { color: var(--green) !important; }
 
 @media (max-width: 768px) {
   .hamburger { display: block; }
@@ -188,7 +198,7 @@ a { color: var(--accent); text-decoration: none; }
 
 <!-- Search Modal -->
 <div class="modal-overlay" id="searchModal">
-  <div class="modal" style="max-width:700px;">
+  <div class="modal" style="max-width:800px;width:95%;">
     <h3>Recherche code / memoire</h3>
     <input type="text" id="searchQuery" placeholder="Decris ce que tu cherches..." onkeydown="if(event.key==='Enter')doSearch()">
     <div class="search-results" id="searchResults"></div>
@@ -481,15 +491,42 @@ async function doSearch() {
       return;
     }
     container.innerHTML = '';
-    data.results.forEach(r => {
+    data.results.forEach((r, idx) => {
       const div = document.createElement('div');
       div.className = 'search-result';
-      div.innerHTML = `<span class="file">${escHtml(r.file || r.repo)}</span><span class="score">${(r.score*100).toFixed(1)}%</span><div class="snippet">${escHtml(r.text?.slice(0, 300) || '')}</div>`;
+      const fname = r.file || r.repo || 'memoire';
+      const ext = fname.split('.').pop();
+      const langMap = {py:'python',js:'javascript',ts:'typescript',tsx:'tsx',jsx:'jsx',java:'java',go:'go',rs:'rust',rb:'ruby',php:'php',c:'c',cpp:'cpp',h:'c',sh:'bash',sql:'sql',html:'html',css:'css',txt:'plaintext',md:'markdown',yml:'yaml',yaml:'yaml',json:'json',toml:'toml'};
+      const lang = langMap[ext] || '';
+      const codeText = r.text || '';
+      let highlighted;
+      try { highlighted = lang ? hljs.highlight(codeText, {language: lang}).value : hljs.highlightAuto(codeText).value; } catch(e) { highlighted = escHtml(codeText); }
+      div.innerHTML = `
+        <div class="sr-header" onclick="document.getElementById('srCode${idx}').classList.toggle('open')">
+          <span class="sr-file">${escHtml(fname)}</span>
+          <span class="sr-type">${escHtml(r.type || '')}</span>
+          <span class="sr-score">${(r.score*100).toFixed(1)}%</span>
+          <div class="sr-actions">
+            <button onclick="event.stopPropagation();copyResult(this,'${idx}')">Copier</button>
+          </div>
+        </div>
+        <div class="sr-code open" id="srCode${idx}">
+          <pre><code class="language-${lang}">${highlighted}</code></pre>
+        </div>`;
       container.appendChild(div);
     });
   } catch(e) {
     container.innerHTML = `<div style="color:var(--red)">Erreur: ${e.message}</div>`;
   }
+}
+
+function copyResult(btn, idx) {
+  const code = document.getElementById('srCode'+idx).querySelector('code');
+  navigator.clipboard.writeText(code.textContent).then(() => {
+    btn.textContent = 'Copie!';
+    btn.classList.add('sr-copied');
+    setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('sr-copied'); }, 1500);
+  });
 }
 
 function toggleSidebar() {
