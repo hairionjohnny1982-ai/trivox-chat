@@ -184,24 +184,81 @@ async def update_title(conv_id: str, req: Request):
 
 # ─── Chat (streaming) ───
 
-def _build_system_prompt(query: str, conv_id: str = None) -> str:
-    """Build system prompt with RAG context from memory + code search."""
+def _build_system_prompt(query: str, conv_id: str = None, project: str = None) -> str:
+    """Build system prompt with RAG context from code search + memory."""
     parts = []
+    code_results = []
+    memories = []
 
     if memory_store and encoder:
-        try:
-            # Search memories
-            memories = memory_store.recall(query, project=None, top_k=MAX_MEMORIES_INJECT)
-            if memories:
-                parts.append("## Relevant memories\n")
-                for m in memories:
-                    parts.append(f"- {m['text'][:300]}")
-                parts.append("")
-        except Exception as e:
-            log.debug(f"Memory recall error: {e}")
+        emb = encoder.encode(query)
 
-    if not parts:
-        return ""
+        # 1. Search indexed code repos (priority)
+        try:
+            collections = memory_store.client.get_collections().collections
+            repo_collections = [c.name for c in collections if c.name.startswith("repo_")]
+            # If project is active, only search that project's collection
+            if project:
+                target = f"repo_{project.lower().replace('-', '_')}"
+                repo_collections = [c for c in repo_collections if c == target]
+
+            for col in repo_collections:
+                try:
+                    hits = memory_store.client.query_points(
+                        collection_name=col, query=emb, limit=8,
+                    ).points
+                    for h in hits:
+                        if h.score >= 0.35:
+                            code_results.append({
+                                "text": h.payload.get("text", ""),
+                                "file": h.payload.get("file", ""),
+                                "repo": h.payload.get("repo", col.replace("repo_", "")),
+                                "type": h.payload.get("type", "code"),
+                                "score": h.score,
+                            })
+                except Exception:
+                    pass
+        except Exception as e:
+            log.debug(f"Code search error: {e}")
+
+        # 2. Search memories (lower priority)
+        try:
+            memories = memory_store.recall(query, project=None, top_k=3)
+        except Exception:
+            memories = []
+
+    # Build the system prompt
+    if code_results:
+        # Deduplicate
+        seen = set()
+        unique = []
+        for r in sorted(code_results, key=lambda x: x["score"], reverse=True):
+            key = r["text"][:150]
+            if key not in seen:
+                seen.add(key)
+                unique.append(r)
+        code_results = unique[:6]
+
+        parts.append("Tu es un assistant expert en code. Voici des extraits de code source pertinents trouves dans le projet. Utilise-les pour repondre precisement en citant les fichiers, fonctions et chemins exacts.\n")
+        parts.append("## Code source du projet\n")
+        for r in code_results:
+            repo = r["repo"]
+            fpath = r["file"]
+            score = r["score"]
+            parts.append(f"### {fpath} (repo: {repo}, pertinence: {score*100:.0f}%)")
+            parts.append(f"```")
+            parts.append(r["text"][:1500])
+            parts.append(f"```\n")
+
+    if memories:
+        parts.append("## Memoire contextuelle\n")
+        for m in memories:
+            parts.append(f"- {m['text'][:300]}")
+        parts.append("")
+
+    if parts:
+        parts.append("---")
+        parts.append("Reponds en utilisant les extraits de code ci-dessus. Cite les noms de fichiers et de fonctions. Si tu montres du code, indique toujours dans quel fichier et quel dossier il se trouve.")
 
     return "\n".join(parts)
 
@@ -230,14 +287,15 @@ async def chat(req: Request):
     messages = body.get("messages", [])
     conv_id = body.get("conversation_id")
     stream = body.get("stream", True)
+    project = body.get("project")
 
     if not messages:
         raise HTTPException(400, "No messages")
 
     user_msg = messages[-1].get("content", "")
 
-    # RAG: inject context
-    rag_context = _build_system_prompt(user_msg, conv_id)
+    # RAG: inject context from code + memory
+    rag_context = _build_system_prompt(user_msg, conv_id, project=project)
     ollama_messages = []
     if rag_context:
         ollama_messages.append({"role": "system", "content": rag_context})
